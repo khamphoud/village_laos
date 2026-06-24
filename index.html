@@ -24,6 +24,7 @@
                         <li><a href="#" class="nav-link active" data-page="user-search">ຄົ້ນຫາບ້ານ</a></li>
                         <li><a href="#" class="nav-link" data-page="province-management">ແຂວງ</a></li>
                         <li><a href="#" class="nav-link" data-page="district-management">ເມືອງ</a></li>
+                        <li><a href="#" class="nav-link" data-page="group-village-management">ກຸ່ມບ້ານ</a></li>
                         <li><a href="#" class="nav-link" data-page="village-management">ບ້ານ</a></li>
                     </ul>
                 </nav>
@@ -51,6 +52,9 @@
                         <select id="district-filter" class="select-box">
                             <option value="">>>ເລືອກເມືອງ>></option>
                         </select>
+                        <select id="group-village-filter" class="select-box">
+                            <option value="">>>ເລືອກກຸ່ມບ້ານ>></option>
+                        </select>
                         <div class="search-box">
                             <input type="text" id="village-search" class="search-input" placeholder="ຄົ້ນຫາບ້ານ...">
                         </div>
@@ -62,14 +66,14 @@
                                 <tr>
                                     <th>ຊື່ບ້ານ</th>
                                     <th>ຊື່ບ້ານ(EN)</th>
+                                    <th>ກຸ່ມບ້ານ</th>
                                     <th>ເມືອງ</th>
                                     <th>ແຂວງ</th>
                                 </tr>
                             </thead>
                             <tbody id="village-table-body">
-                                <!-- Village data will be populated here -->
                                 <tr>
-                                    <td colspan="4" style="text-align: center;">ເລີ່ມພິມຄົ້ນຫາບ້ານໄດ້ເລີຍ</td>
+                                    <td colspan="5" style="text-align: center;">ເລີ່ມພິມຄົ້ນຫາບ້ານໄດ້ເລີຍ</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -105,9 +109,7 @@
                                     <th>ປຸ່ມຄຳສັ່ງ</th>
                                 </tr>
                             </thead>
-                            <tbody id="province-table-body">
-                                <!-- Province data will be populated here -->
-                            </tbody>
+                            <tbody id="province-table-body"></tbody>
                         </table>
                     </div>
                     
@@ -142,9 +144,7 @@
                                     <th>ປຸ່ມຄຳສັ່ງ</th>
                                 </tr>
                             </thead>
-                            <tbody id="district-table-body">
-                                <!-- District data will be populated here -->
-                            </tbody>
+                            <tbody id="district-table-body"></tbody>
                         </table>
                     </div>
                     
@@ -152,6 +152,40 @@
                         <button class="page-btn" id="prev-page-district"><i class="fas fa-chevron-left"></i></button>
                         <span class="page-info">ໜ້າທີ <span id="current-page-district">1</span> ຈາກທັງໝົດ <span id="total-pages-district">1</span></span>
                         <button class="page-btn" id="next-page-district"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Group Village Management Section (Admin Only) -->
+            <section id="group-village-management" class="page-section hidden">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">ກຸ່ມບ້ານ</h2>
+                        <button id="add-group-village-btn" class="btn btn-primary"><i class="fas fa-plus"></i> ເພີ່ມກຸ່ມບ້ານ</button>
+                    </div>
+                    
+                    <div class="search-box">
+                        <input type="text" id="group-village-search" class="search-input" placeholder="ຄົ້ນຫາກຸ່ມບ້ານ...">
+                    </div>
+                    
+                    <div class="table-container">
+                        <table id="group-village-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>ຊື່ກຸ່ມບ້ານ</th>
+                                    <th>ເມືອງ</th>
+                                    <th>ປຸ່ມຄຳສັ່ງ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="group-village-table-body"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="pagination">
+                        <button class="page-btn" id="prev-page-group-village"><i class="fas fa-chevron-left"></i></button>
+                        <span class="page-info">ໜ້າທີ <span id="current-page-group-village">1</span> ຈາກທັງໝົດ <span id="total-pages-group-village">1</span></span>
+                        <button class="page-btn" id="next-page-group-village"><i class="fas fa-chevron-right"></i></button>
                     </div>
                 </div>
             </section>
@@ -175,14 +209,13 @@
                                     <th>ID</th>
                                     <th>ຊື່ບ້ານ</th>
                                     <th>ຊື່ບ້ານ(EN)</th>
+                                    <th>ກຸ່ມບ້ານ</th>
                                     <th>ເມືອງ</th>
                                     <th>ແຂວງ</th>
                                     <th>ປຸ່ມຄຳສັ່ງ</th>
                                 </tr>
                             </thead>
-                            <tbody id="village-admin-table-body">
-                                <!-- Village data will be populated here -->
-                            </tbody>
+                            <tbody id="village-admin-table-body"></tbody>
                         </table>
                     </div>
                     
@@ -221,7 +254,7 @@
     <div id="province-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title" id="province-modal-title">ເພີ່ມບ້ານ</h3>
+                <h3 class="modal-title" id="province-modal-title">ເພີ່ມແຂວງ</h3>
                 <button class="close-btn">&times;</button>
             </div>
             <form id="province-form">
@@ -285,6 +318,45 @@
         </div>
     </div>
 
+    <!-- Add/Edit Group Village Modal -->
+    <div id="group-village-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="group-village-modal-title">ເພີ່ມກຸ່ມບ້ານ</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="group-village-form">
+                <div class="form-group">
+                    <label for="group-village-id" class="form-label">ID ກຸ່ມບ້ານ</label>
+                    <div class="id-input-group">
+                        <input type="number" id="group-village-id" class="form-input" required min="1">
+                        <button type="button" id="auto-group-village-id" class="auto-id-btn">ID ອັດຕະໂນມັດ</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="group-village-name" class="form-label">ຊື່ກຸ່ມບ້ານ</label>
+                    <input type="text" id="group-village-name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="group-village-province" class="form-label">ແຂວງ</label>
+                    <select id="group-village-province" class="form-input" required>
+                        <option value="">ເລືອກແຂວງ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="group-village-district" class="form-label">ເມືອງ</label>
+                    <select id="group-village-district" class="form-input" required>
+                        <option value="">ເລືອກເມືອງກ່ອນ</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary close-modal">ຍົກເລີກ</button>
+                    <button type="submit" class="btn btn-primary">ບັນທຶກ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Add/Edit Village Modal -->
     <div id="village-modal" class="modal">
         <div class="modal-content">
@@ -318,6 +390,12 @@
                     <label for="village-district" class="form-label">ເມືອງ</label>
                     <select id="village-district" class="form-input" required>
                         <option value="">ເລືອກເມືອງ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="village-group" class="form-label">ກຸ່ມບ້ານ</label>
+                    <select id="village-group" class="form-input">
+                        <option value="">ເລືອກກຸ່ມບ້ານ (ທາງເລືອກ)</option>
                     </select>
                 </div>
                 <div class="form-actions">
