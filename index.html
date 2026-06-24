@@ -10,6 +10,201 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* ── Bulk Assign specific styles ── */
+        .bulk-assign-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+        @media (max-width: 900px) {
+            .bulk-assign-layout { grid-template-columns: 1fr; }
+        }
+
+        .bulk-panel {
+            background: #f8f9ff;
+            border: 1.5px solid #e0e7ff;
+            border-radius: 10px;
+            padding: 1.25rem;
+        }
+        .bulk-panel-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e0e7ff;
+        }
+
+        /* village checkbox list */
+        .village-check-list {
+            max-height: 420px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: #fff;
+        }
+        .village-check-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-bottom: 1px solid #f0f4ff;
+            cursor: pointer;
+            transition: background 0.15s;
+            font-size: 0.88rem;
+        }
+        .village-check-item:last-child { border-bottom: none; }
+        .village-check-item:hover { background: #f0f4ff; }
+        .village-check-item.has-group { opacity: 0.55; }
+        .village-check-item input[type="checkbox"] {
+            width: 16px; height: 16px; cursor: pointer; flex-shrink: 0;
+        }
+        .village-check-name { flex: 1; }
+        .village-check-badge {
+            font-size: 0.7rem;
+            padding: 1px 7px;
+            border-radius: 20px;
+            background: #e9ecef;
+            color: #6c757d;
+            white-space: nowrap;
+        }
+        .village-check-badge.assigned {
+            background: #d4f5e5;
+            color: #1a7a4a;
+        }
+
+        /* selection toolbar */
+        .select-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .select-toolbar .sel-count {
+            font-size: 0.82rem;
+            color: #6c757d;
+        }
+        .select-toolbar-btns { display: flex; gap: 6px; }
+        .mini-btn {
+            padding: 4px 10px;
+            border: 1px solid #dee2e6;
+            background: #fff;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .mini-btn:hover { background: #f0f4ff; border-color: #4361ee; color: #4361ee; }
+
+        /* summary row */
+        .assign-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .assign-stat {
+            text-align: center;
+            background: #fff;
+            border-radius: 8px;
+            padding: 0.75rem 0.5rem;
+            border: 1.5px solid #e0e7ff;
+        }
+        .assign-stat .num { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+        .assign-stat .lbl { font-size: 0.72rem; color: #6c757d; margin-top: 3px; }
+        .num-blue   { color: #4361ee; }
+        .num-green  { color: #2ec27e; }
+        .num-orange { color: #f8961e; }
+
+        /* progress */
+        .bulk-progress-wrap { margin: 0.75rem 0; }
+        .bulk-progress-bg {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+        .bulk-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4361ee, #4895ef);
+            border-radius: 99px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .bulk-progress-text {
+            font-size: 0.78rem;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        /* result log */
+        .bulk-log {
+            background: #1a1d2e;
+            border-radius: 6px;
+            padding: 0.75rem;
+            max-height: 180px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            line-height: 1.6;
+            margin-top: 0.75rem;
+        }
+        .blog-ok    { color: #68d391; }
+        .blog-err   { color: #fc8181; }
+        .blog-info  { color: #63b3ed; }
+        .blog-done  { color: #b794f4; font-weight: bold; }
+
+        /* search in bulk panel */
+        .bulk-search {
+            width: 100%;
+            padding: 7px 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+        .bulk-search:focus { outline: none; border-color: #4361ee; }
+
+        .bulk-filter-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .bulk-select {
+            width: 100%;
+            padding: 7px 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            background: #fff;
+        }
+        .bulk-select:focus { outline: none; border-color: #4361ee; }
+
+        .show-assigned-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.82rem;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+
+        .no-villages-msg {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+        .no-villages-msg i { font-size: 1.5rem; display: block; margin-bottom: 0.5rem; opacity: 0.4; }
+    </style>
 </head>
 <body>
     <header>
@@ -26,6 +221,7 @@
                         <li><a href="#" class="nav-link" data-page="district-management">ເມືອງ</a></li>
                         <li><a href="#" class="nav-link" data-page="group-village-management">ກຸ່ມບ້ານ</a></li>
                         <li><a href="#" class="nav-link" data-page="village-management">ບ້ານ</a></li>
+                        <li><a href="#" class="nav-link admin-only" data-page="bulk-assign-management">ເພີ່ມບ້ານເຂົ້າກຸ່ມບ້ານ (Bulk Assign)</a></li>
                     </ul>
                 </nav>
                 <div class="auth-buttons">
@@ -38,13 +234,13 @@
 
     <main class="main-content">
         <div class="container">
+
             <!-- User Search Section -->
             <section id="user-search" class="page-section">
                 <div class="section">
                     <div class="section-header">
                         <h2 class="section-title">ຄົ້ນຫາບ້ານ</h2>
                     </div>
-                    
                     <div class="filter-section">
                         <select id="province-filter" class="select-box">
                             <option value="">>>ເລືອກແຂວງ>></option>
@@ -59,7 +255,6 @@
                             <input type="text" id="village-search" class="search-input" placeholder="ຄົ້ນຫາບ້ານ...">
                         </div>
                     </div>
-                    
                     <div class="table-container">
                         <table id="village-table">
                             <thead>
@@ -72,13 +267,10 @@
                                 </tr>
                             </thead>
                             <tbody id="village-table-body">
-                                <tr>
-                                    <td colspan="5" style="text-align: center;">ເລີ່ມພິມຄົ້ນຫາບ້ານໄດ້ເລີຍ</td>
-                                </tr>
+                                <tr><td colspan="5" style="text-align:center;">ເລີ່ມພິມຄົ້ນຫາບ້ານໄດ້ເລີຍ</td></tr>
                             </tbody>
                         </table>
                     </div>
-                    
                     <div class="pagination">
                         <button class="page-btn" id="prev-page"><i class="fas fa-chevron-left"></i></button>
                         <span class="page-info">ໜ້າທີ <span id="current-page">1</span> ຈາກທັງໝົດ<span id="total-pages">1</span></span>
@@ -87,32 +279,24 @@
                 </div>
             </section>
 
-            <!-- Province Management Section (Admin Only) -->
+            <!-- Province Management -->
             <section id="province-management" class="page-section hidden">
                 <div class="section">
                     <div class="section-header">
                         <h2 class="section-title">ແຂວງ</h2>
                         <button id="add-province-btn" class="btn btn-primary"><i class="fas fa-plus"></i> ເພີ່ມແຂວງ</button>
                     </div>
-                    
                     <div class="search-box">
                         <input type="text" id="province-search" class="search-input" placeholder="ຄົ້ນຫາແຂວງ...">
                     </div>
-                    
                     <div class="table-container">
                         <table id="province-table">
                             <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>ຊື່ແຂວງ</th>
-                                    <th>ຊື່ແຂວງ(EN)</th>
-                                    <th>ປຸ່ມຄຳສັ່ງ</th>
-                                </tr>
+                                <tr><th>ID</th><th>ຊື່ແຂວງ</th><th>ຊື່ແຂວງ(EN)</th><th>ປຸ່ມຄຳສັ່ງ</th></tr>
                             </thead>
                             <tbody id="province-table-body"></tbody>
                         </table>
                     </div>
-                    
                     <div class="pagination">
                         <button class="page-btn" id="prev-page-province"><i class="fas fa-chevron-left"></i></button>
                         <span class="page-info">ໜ້າທີ <span id="current-page-province">1</span> ຈາກທັງໝົດ <span id="total-pages-province">1</span></span>
@@ -121,33 +305,24 @@
                 </div>
             </section>
 
-            <!-- District Management Section (Admin Only) -->
+            <!-- District Management -->
             <section id="district-management" class="page-section hidden">
                 <div class="section">
                     <div class="section-header">
                         <h2 class="section-title">ເມືອງ</h2>
                         <button id="add-district-btn" class="btn btn-primary"><i class="fas fa-plus"></i> ເພີ່ມເມືອງ</button>
                     </div>
-                    
                     <div class="search-box">
                         <input type="text" id="district-search" class="search-input" placeholder="ຄົ້ນຫາເມືອງ...">
                     </div>
-                    
                     <div class="table-container">
                         <table id="district-table">
                             <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>ຊື່ເມືອງ</th>
-                                    <th>ຊື່ເມືອງ(EN)</th>
-                                    <th>ແຂວງ</th>
-                                    <th>ປຸ່ມຄຳສັ່ງ</th>
-                                </tr>
+                                <tr><th>ID</th><th>ຊື່ເມືອງ</th><th>ຊື່ເມືອງ(EN)</th><th>ແຂວງ</th><th>ປຸ່ມຄຳສັ່ງ</th></tr>
                             </thead>
                             <tbody id="district-table-body"></tbody>
                         </table>
                     </div>
-                    
                     <div class="pagination">
                         <button class="page-btn" id="prev-page-district"><i class="fas fa-chevron-left"></i></button>
                         <span class="page-info">ໜ້າທີ <span id="current-page-district">1</span> ຈາກທັງໝົດ <span id="total-pages-district">1</span></span>
@@ -156,32 +331,24 @@
                 </div>
             </section>
 
-            <!-- Group Village Management Section (Admin Only) -->
+            <!-- Group Village Management -->
             <section id="group-village-management" class="page-section hidden">
                 <div class="section">
                     <div class="section-header">
                         <h2 class="section-title">ກຸ່ມບ້ານ</h2>
                         <button id="add-group-village-btn" class="btn btn-primary"><i class="fas fa-plus"></i> ເພີ່ມກຸ່ມບ້ານ</button>
                     </div>
-                    
                     <div class="search-box">
                         <input type="text" id="group-village-search" class="search-input" placeholder="ຄົ້ນຫາກຸ່ມບ້ານ...">
                     </div>
-                    
                     <div class="table-container">
                         <table id="group-village-table">
                             <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>ຊື່ກຸ່ມບ້ານ</th>
-                                    <th>ເມືອງ</th>
-                                    <th>ປຸ່ມຄຳສັ່ງ</th>
-                                </tr>
+                                <tr><th>ID</th><th>ຊື່ກຸ່ມບ້ານ</th><th>ເມືອງ</th><th>ປຸ່ມຄຳສັ່ງ</th></tr>
                             </thead>
                             <tbody id="group-village-table-body"></tbody>
                         </table>
                     </div>
-                    
                     <div class="pagination">
                         <button class="page-btn" id="prev-page-group-village"><i class="fas fa-chevron-left"></i></button>
                         <span class="page-info">ໜ້າທີ <span id="current-page-group-village">1</span> ຈາກທັງໝົດ <span id="total-pages-group-village">1</span></span>
@@ -190,35 +357,24 @@
                 </div>
             </section>
 
-            <!-- Village Management Section (Admin Only) -->
+            <!-- Village Management -->
             <section id="village-management" class="page-section hidden">
                 <div class="section">
                     <div class="section-header">
                         <h2 class="section-title">ບ້ານ</h2>
                         <button id="add-village-btn" class="btn btn-primary"><i class="fas fa-plus"></i> ເພີ່ມບ້ານ</button>
                     </div>
-                    
                     <div class="search-box">
                         <input type="text" id="village-admin-search" class="search-input" placeholder="ຄົ້ນຫາບ້ານ...">
                     </div>
-                    
                     <div class="table-container">
                         <table id="village-admin-table">
                             <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>ຊື່ບ້ານ</th>
-                                    <th>ຊື່ບ້ານ(EN)</th>
-                                    <th>ກຸ່ມບ້ານ</th>
-                                    <th>ເມືອງ</th>
-                                    <th>ແຂວງ</th>
-                                    <th>ປຸ່ມຄຳສັ່ງ</th>
-                                </tr>
+                                <tr><th>ID</th><th>ຊື່ບ້ານ</th><th>ຊື່ບ້ານ(EN)</th><th>ກຸ່ມບ້ານ</th><th>ເມືອງ</th><th>ແຂວງ</th><th>ປຸ່ມຄຳສັ່ງ</th></tr>
                             </thead>
                             <tbody id="village-admin-table-body"></tbody>
                         </table>
                     </div>
-                    
                     <div class="pagination">
                         <button class="page-btn" id="prev-page-village"><i class="fas fa-chevron-left"></i></button>
                         <span class="page-info">ໜ້າທີ <span id="current-page-village">1</span> ຈາກທັງໝົດ <span id="total-pages-village">1</span></span>
@@ -227,7 +383,152 @@
                 </div>
             </section>
 
-            <!-- Login Form -->
+            <!-- ══════════════════════════════════════════════
+                 BULK ASSIGN SECTION (NEW)
+                 ══════════════════════════════════════════════ -->
+            <section id="bulk-assign-management" class="page-section hidden">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title"><i class="fas fa-layer-group" style="color:#4361ee;margin-right:8px;"></i>ເພີ່ມບ້ານເຂົ້າກຸ່ມບ້ານ (Bulk Assign)</h2>
+                    </div>
+
+                    <!-- Summary stats -->
+                    <div class="assign-summary">
+                        <div class="assign-stat">
+                            <div class="num num-blue" id="ba-total-villages">—</div>
+                            <div class="lbl">ບ້ານທັງໝົດ</div>
+                        </div>
+                        <div class="assign-stat">
+                            <div class="num num-green" id="ba-assigned-villages">—</div>
+                            <div class="lbl">ມີກຸ່ມແລ້ວ</div>
+                        </div>
+                        <div class="assign-stat">
+                            <div class="num num-orange" id="ba-unassigned-villages">—</div>
+                            <div class="lbl">ຍັງບໍ່ມີກຸ່ມ</div>
+                        </div>
+                    </div>
+
+                    <div class="bulk-assign-layout">
+
+                        <!-- LEFT: Filters + Village list -->
+                        <div>
+                            <div class="bulk-panel">
+                                <div class="bulk-panel-title"><i class="fas fa-filter"></i> ກັ່ນຕອງ ແລະ ເລືອກບ້ານ</div>
+
+                                <div class="bulk-filter-row">
+                                    <select id="ba-province-filter" class="bulk-select">
+                                        <option value="">— ທຸກແຂວງ —</option>
+                                    </select>
+                                    <select id="ba-district-filter" class="bulk-select">
+                                        <option value="">— ທຸກເມືອງ —</option>
+                                    </select>
+                                    <input type="text" id="ba-village-search" class="bulk-search" placeholder="ຄົ້ນຫາຊື່ບ້ານ...">
+                                </div>
+
+                                <div class="show-assigned-wrap">
+                                    <input type="checkbox" id="ba-show-assigned" checked>
+                                    <label for="ba-show-assigned">ສະແດງບ້ານທີ່ມີກຸ່ມແລ້ວ</label>
+                                </div>
+
+                                <div class="select-toolbar">
+                                    <span class="sel-count" id="ba-sel-count">ເລືອກ 0 ບ້ານ</span>
+                                    <div class="select-toolbar-btns">
+                                        <button class="mini-btn" id="ba-select-all">ເລືອກທັງໝົດ</button>
+                                        <button class="mini-btn" id="ba-select-unassigned">ເລືອກທີ່ຍັງບໍ່ມີກຸ່ມ</button>
+                                        <button class="mini-btn" id="ba-deselect-all">ຍົກເລີກ</button>
+                                    </div>
+                                </div>
+
+                                <div class="village-check-list" id="ba-village-list">
+                                    <div class="no-villages-msg">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        ກຳລັງໂຫຼດຂໍ້ມູນ...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT: Group selector + Action -->
+                        <div>
+                            <div class="bulk-panel" style="margin-bottom:1rem;">
+                                <div class="bulk-panel-title"><i class="fas fa-sitemap"></i> ກຸ່ມບ້ານທີ່ຕ້ອງການມອບໝາຍ</div>
+
+                                <div class="bulk-filter-row">
+                                    <select id="ba-target-province" class="bulk-select">
+                                        <option value="">— ເລືອກແຂວງ —</option>
+                                    </select>
+                                    <select id="ba-target-district" class="bulk-select">
+                                        <option value="">— ເລືອກເມືອງ —</option>
+                                    </select>
+                                    <select id="ba-target-group" class="bulk-select" style="font-weight:700; color:#4361ee; border-color:#4361ee;">
+                                        <option value="">— ເລືອກກຸ່ມບ້ານ —</option>
+                                    </select>
+                                </div>
+
+                                <!-- Selected group info -->
+                                <div id="ba-group-info" style="display:none; background:#f0f4ff; border-radius:6px; padding:0.75rem; margin-top:0.5rem; font-size:0.85rem;">
+                                    <div style="font-weight:700; color:#4361ee; margin-bottom:4px;" id="ba-group-info-name"></div>
+                                    <div style="color:#6c757d;" id="ba-group-info-district"></div>
+                                </div>
+
+                                <!-- Remove from group option -->
+                                <div style="margin-top:0.75rem; display:flex; align-items:center; gap:8px; font-size:0.83rem; color:#6c757d;">
+                                    <input type="checkbox" id="ba-remove-mode" style="width:15px;height:15px;">
+                                    <label for="ba-remove-mode" style="cursor:pointer;">
+                                        <i class="fas fa-times-circle" style="color:#f72585;"></i>
+                                        ລຶບກຸ່ມບ້ານ (set gr_id = null) ສຳລັບບ້ານທີ່ເລືອກ
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Preview before save -->
+                            <div class="bulk-panel" id="ba-preview-panel" style="display:none; margin-bottom:1rem;">
+                                <div class="bulk-panel-title"><i class="fas fa-eye"></i> Preview ກ່ອນ Update</div>
+                                <div style="font-size:0.83rem; color:#6c757d; margin-bottom:0.5rem;" id="ba-preview-desc"></div>
+                                <div style="max-height:200px; overflow-y:auto; border:1px solid #e0e7ff; border-radius:6px;">
+                                    <table style="width:100%; font-size:0.82rem; border-collapse:collapse;">
+                                        <thead>
+                                            <tr style="background:#f0f4ff;">
+                                                <th style="padding:7px 10px; text-align:left;">ຊື່ບ້ານ</th>
+                                                <th style="padding:7px 10px; text-align:left;">ກຸ່ມເກົ່າ</th>
+                                                <th style="padding:7px 10px; text-align:left;">ກຸ່ມໃໝ່</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="ba-preview-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Action buttons -->
+                            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:1rem;">
+                                <button class="btn btn-primary" id="ba-preview-btn" disabled>
+                                    <i class="fas fa-eye"></i> Preview
+                                </button>
+                                <button class="btn btn-success" id="ba-run-btn" style="display:none;">
+                                    <i class="fas fa-rocket"></i> ຢືນຢັນ Update (<span id="ba-run-count">0</span> ບ້ານ)
+                                </button>
+                                <button class="btn btn-secondary" id="ba-cancel-btn" style="display:none;">
+                                    <i class="fas fa-times"></i> ຍົກເລີກ
+                                </button>
+                            </div>
+
+                            <!-- Progress -->
+                            <div id="ba-progress-wrap" style="display:none;">
+                                <div class="bulk-progress-wrap">
+                                    <div class="bulk-progress-bg">
+                                        <div class="bulk-progress-fill" id="ba-progress-fill"></div>
+                                    </div>
+                                    <div class="bulk-progress-text" id="ba-progress-text">0 / 0</div>
+                                </div>
+                                <div class="bulk-log" id="ba-log"></div>
+                            </div>
+                        </div>
+
+                    </div><!-- /bulk-assign-layout -->
+                </div>
+            </section>
+
+            <!-- Login Section -->
             <section id="login-section" class="page-section hidden">
                 <div class="login-container">
                     <h2 class="login-title">Admin Login</h2>
@@ -247,10 +548,11 @@
                     </form>
                 </div>
             </section>
+
         </div>
     </main>
 
-    <!-- Add/Edit Province Modal -->
+    <!-- Modals (unchanged) -->
     <div id="province-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -281,7 +583,6 @@
         </div>
     </div>
 
-    <!-- Add/Edit District Modal -->
     <div id="district-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -318,7 +619,6 @@
         </div>
     </div>
 
-    <!-- Add/Edit Group Village Modal -->
     <div id="group-village-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -357,7 +657,6 @@
         </div>
     </div>
 
-    <!-- Add/Edit Village Modal -->
     <div id="village-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">

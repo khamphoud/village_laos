@@ -1024,3 +1024,339 @@ function navigatePage(direction, type) {
     document.getElementById(cfg.curr).textContent = currentPageNum;
     cfg.fn();
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   BULK ASSIGN — Additional JS (added to existing script.js logic)
+   ═══════════════════════════════════════════════════════════════ */
+
+// ── State ──────────────────────────────────────────────────────
+let baSelectedVillageIds = new Set(); // set of village.id (Firestore doc IDs)
+let baFilteredVillages   = [];
+let baIsRunning          = false;
+
+// ── Init when page shown ───────────────────────────────────────
+function initBulkAssign() {
+    refreshBulkAssignStats();
+    populateBulkAssignFilters();
+    renderBulkVillageList();
+    resetBulkAssignRight();
+}
+
+function refreshBulkAssignStats() {
+    const total      = villages.length;
+    const assigned   = villages.filter(v => v.gr_id != null).length;
+    const unassigned = total - assigned;
+    document.getElementById('ba-total-villages').textContent     = total;
+    document.getElementById('ba-assigned-villages').textContent  = assigned;
+    document.getElementById('ba-unassigned-villages').textContent = unassigned;
+}
+
+// ── Populate province/district filters ────────────────────────
+function populateBulkAssignFilters() {
+    const baProvFilter   = document.getElementById('ba-province-filter');
+    const baProvTarget   = document.getElementById('ba-target-province');
+
+    [baProvFilter, baProvTarget].forEach(sel => {
+        while (sel.children.length > 1) sel.removeChild(sel.lastChild);
+        provinces.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.pr_id;
+            opt.textContent = p.pr_name;
+            sel.appendChild(opt.cloneNode(true));
+        });
+    });
+}
+
+// ── Filter left-panel villages ─────────────────────────────────
+function filterBulkVillages() {
+    const provId       = document.getElementById('ba-province-filter').value;
+    const distId       = document.getElementById('ba-district-filter').value;
+    const search       = document.getElementById('ba-village-search').value.toLowerCase();
+    const showAssigned = document.getElementById('ba-show-assigned').checked;
+
+    baFilteredVillages = villages.filter(v => {
+        const dist = districts.find(d => d.di_id == v.di_id);
+        if (provId && (!dist || dist.pr_id != provId)) return false;
+        if (distId && v.di_id != distId) return false;
+        if (!showAssigned && v.gr_id != null) return false;
+        if (search && !v.vill_name.toLowerCase().includes(search) &&
+            !(v.vill_name_en && v.vill_name_en.toLowerCase().includes(search))) return false;
+        return true;
+    });
+
+    renderBulkVillageList();
+}
+
+// ── Render village checkbox list ───────────────────────────────
+function renderBulkVillageList() {
+    const container = document.getElementById('ba-village-list');
+
+    if (baFilteredVillages.length === 0) {
+        container.innerHTML = `<div class="no-villages-msg">
+            <i class="fas fa-search"></i>ບໍ່ພົບຂໍ້ມູນບ້ານ</div>`;
+        updateSelectionCount();
+        return;
+    }
+
+    container.innerHTML = baFilteredVillages.map(v => {
+        const grp     = v.gr_id ? groupVillages.find(g => g.gr_id == v.gr_id) : null;
+        const checked = baSelectedVillageIds.has(v.id) ? 'checked' : '';
+        const hasGrp  = v.gr_id != null ? 'has-group' : '';
+        const badge   = grp
+            ? `<span class="village-check-badge assigned">${grp.gr_name}</span>`
+            : `<span class="village-check-badge">ຍັງບໍ່ມີກຸ່ມ</span>`;
+
+        return `<label class="village-check-item ${hasGrp}" data-id="${v.id}">
+            <input type="checkbox" value="${v.id}" ${checked}>
+            <span class="village-check-name">${v.vill_name}${v.vill_name_en ? ' <small style="color:#aaa">('+v.vill_name_en+')</small>' : ''}</span>
+            ${badge}
+        </label>`;
+    }).join('');
+
+    // Bind checkbox events
+    container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', function() {
+            if (this.checked) baSelectedVillageIds.add(this.value);
+            else              baSelectedVillageIds.delete(this.value);
+            updateSelectionCount();
+            resetBulkAssignRight();
+        });
+    });
+    updateSelectionCount();
+}
+
+function updateSelectionCount() {
+    const n = baSelectedVillageIds.size;
+    document.getElementById('ba-sel-count').textContent = `ເລືອກ ${n} ບ້ານ`;
+    document.getElementById('ba-preview-btn').disabled  = n === 0;
+}
+
+// ── Selection helpers ──────────────────────────────────────────
+document.getElementById('ba-select-all').addEventListener('click', () => {
+    baFilteredVillages.forEach(v => baSelectedVillageIds.add(v.id));
+    renderBulkVillageList();
+});
+
+document.getElementById('ba-select-unassigned').addEventListener('click', () => {
+    baFilteredVillages.filter(v => v.gr_id == null).forEach(v => baSelectedVillageIds.add(v.id));
+    renderBulkVillageList();
+});
+
+document.getElementById('ba-deselect-all').addEventListener('click', () => {
+    baSelectedVillageIds.clear();
+    renderBulkVillageList();
+    resetBulkAssignRight();
+});
+
+// ── Left-panel filter events ───────────────────────────────────
+document.getElementById('ba-province-filter').addEventListener('change', function() {
+    // Cascade district
+    const distSel = document.getElementById('ba-district-filter');
+    while (distSel.children.length > 1) distSel.removeChild(distSel.lastChild);
+    if (this.value) {
+        districts.filter(d => d.pr_id == this.value).forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.di_id; opt.textContent = d.di_name;
+            distSel.appendChild(opt);
+        });
+    }
+    filterBulkVillages();
+});
+
+document.getElementById('ba-district-filter').addEventListener('change', filterBulkVillages);
+document.getElementById('ba-village-search').addEventListener('input',   filterBulkVillages);
+document.getElementById('ba-show-assigned').addEventListener('change',   filterBulkVillages);
+
+// ── Right-panel: target province/district/group cascade ────────
+document.getElementById('ba-target-province').addEventListener('change', function() {
+    const distSel = document.getElementById('ba-target-district');
+    while (distSel.children.length > 1) distSel.removeChild(distSel.lastChild);
+    // Reset group
+    const grpSel = document.getElementById('ba-target-group');
+    while (grpSel.children.length > 1) grpSel.removeChild(grpSel.lastChild);
+    document.getElementById('ba-group-info').style.display = 'none';
+
+    if (this.value) {
+        districts.filter(d => d.pr_id == this.value).forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.di_id; opt.textContent = d.di_name;
+            distSel.appendChild(opt);
+        });
+    }
+    resetBulkAssignRight();
+});
+
+document.getElementById('ba-target-district').addEventListener('change', function() {
+    const grpSel = document.getElementById('ba-target-group');
+    while (grpSel.children.length > 1) grpSel.removeChild(grpSel.lastChild);
+    document.getElementById('ba-group-info').style.display = 'none';
+
+    if (this.value) {
+        groupVillages.filter(g => g.di_id == this.value).forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g.gr_id; opt.textContent = g.gr_name;
+            grpSel.appendChild(opt);
+        });
+    }
+    resetBulkAssignRight();
+});
+
+document.getElementById('ba-target-group').addEventListener('change', function() {
+    const grpId  = this.value;
+    const infoEl = document.getElementById('ba-group-info');
+    if (grpId) {
+        const grp  = groupVillages.find(g => g.gr_id == grpId);
+        const dist = grp ? districts.find(d => d.di_id == grp.di_id) : null;
+        document.getElementById('ba-group-info-name').textContent    = grp ? grp.gr_name : '';
+        document.getElementById('ba-group-info-district').textContent = dist ? 'ເມືອງ: ' + dist.di_name : '';
+        infoEl.style.display = 'block';
+    } else {
+        infoEl.style.display = 'none';
+    }
+    resetBulkAssignRight();
+});
+
+document.getElementById('ba-remove-mode').addEventListener('change', resetBulkAssignRight);
+
+function resetBulkAssignRight() {
+    document.getElementById('ba-preview-panel').style.display = 'none';
+    document.getElementById('ba-run-btn').style.display       = 'none';
+    document.getElementById('ba-cancel-btn').style.display    = 'none';
+    document.getElementById('ba-progress-wrap').style.display = 'none';
+
+    // Enable preview btn only if villages selected AND (group chosen OR remove-mode)
+    const hasVillages  = baSelectedVillageIds.size > 0;
+    const removeMode   = document.getElementById('ba-remove-mode').checked;
+    const hasGroup     = document.getElementById('ba-target-group').value !== '';
+    document.getElementById('ba-preview-btn').disabled = !(hasVillages && (hasGroup || removeMode));
+}
+
+// ── PREVIEW ────────────────────────────────────────────────────
+document.getElementById('ba-preview-btn').addEventListener('click', () => {
+    const removeMode = document.getElementById('ba-remove-mode').checked;
+    const newGrId    = removeMode ? null : parseInt(document.getElementById('ba-target-group').value);
+    const newGrp     = newGrId ? groupVillages.find(g => g.gr_id === newGrId) : null;
+
+    const selectedVillages = villages.filter(v => baSelectedVillageIds.has(v.id));
+
+    // Build preview rows
+    const previewBody = document.getElementById('ba-preview-body');
+    previewBody.innerHTML = selectedVillages.map(v => {
+        const oldGrp = v.gr_id ? groupVillages.find(g => g.gr_id == v.gr_id) : null;
+        const oldLbl = oldGrp ? oldGrp.gr_name : '<em style="color:#aaa">—</em>';
+        const newLbl = newGrp ? newGrp.gr_name : '<em style="color:#f72585">ລຶບກຸ່ມ</em>';
+        const same   = v.gr_id === newGrId;
+        return `<tr style="${same ? 'opacity:0.45;' : ''}">
+            <td style="padding:6px 10px;">${v.vill_name}</td>
+            <td style="padding:6px 10px;">${oldLbl}</td>
+            <td style="padding:6px 10px;">${same ? '<span style="color:#6c757d;font-style:italic;">ຄືກັນ (ຂ້າມ)</span>' : newLbl}</td>
+        </tr>`;
+    }).join('');
+
+    const willUpdate = selectedVillages.filter(v => v.gr_id !== newGrId).length;
+    const willSkip   = selectedVillages.length - willUpdate;
+
+    document.getElementById('ba-preview-desc').innerHTML =
+        `ຈະ update <strong style="color:#4361ee">${willUpdate}</strong> ບ້ານ` +
+        (willSkip > 0 ? ` (ຂ້າມ ${willSkip} ບ້ານທີ່ gr_id ຄືກັນຢູ່ແລ້ວ)` : '');
+
+    document.getElementById('ba-preview-panel').style.display = 'block';
+    document.getElementById('ba-run-count').textContent       = willUpdate;
+    document.getElementById('ba-run-btn').style.display       = willUpdate > 0 ? 'inline-flex' : 'none';
+    document.getElementById('ba-cancel-btn').style.display    = 'inline-flex';
+});
+
+document.getElementById('ba-cancel-btn').addEventListener('click', resetBulkAssignRight);
+
+// ── RUN UPDATE ─────────────────────────────────────────────────
+document.getElementById('ba-run-btn').addEventListener('click', async () => {
+    if (baIsRunning) return;
+
+    const removeMode = document.getElementById('ba-remove-mode').checked;
+    const newGrId    = removeMode ? null : parseInt(document.getElementById('ba-target-group').value);
+
+    const toUpdate = villages.filter(v =>
+        baSelectedVillageIds.has(v.id) && v.gr_id !== newGrId
+    );
+
+    if (!confirm(`ຢືນຢັນ update gr_id ໃຫ້ ${toUpdate.length} ບ້ານ?`)) return;
+
+    baIsRunning = true;
+    document.getElementById('ba-progress-wrap').style.display = 'block';
+    document.getElementById('ba-run-btn').disabled    = true;
+    document.getElementById('ba-cancel-btn').style.display = 'none';
+
+    const logEl = document.getElementById('ba-log');
+    logEl.innerHTML = '';
+
+    const addLog = (msg, cls = '') => {
+        const line = document.createElement('div');
+        line.className = cls;
+        line.textContent = msg;
+        logEl.appendChild(line);
+        logEl.scrollTop = logEl.scrollHeight;
+    };
+
+    addLog(`🚀 ເລີ່ມ update ${toUpdate.length} villages...`, 'blog-info');
+
+    const CHUNK = 500;
+    let done = 0, errors = 0;
+
+    for (let i = 0; i < toUpdate.length; i += CHUNK) {
+        const chunk = toUpdate.slice(i, i + CHUNK);
+        const batch = db.batch();
+        chunk.forEach(v => {
+            batch.update(db.collection('villages').doc(v.id), { gr_id: newGrId });
+        });
+
+        try {
+            await batch.commit();
+            // Update local cache
+            chunk.forEach(v => { v.gr_id = newGrId; });
+            done += chunk.length;
+            chunk.forEach(v => addLog(`✅ ${v.vill_name} → gr_id: ${newGrId ?? 'null'}`, 'blog-ok'));
+        } catch (e) {
+            errors += chunk.length;
+            addLog(`❌ Batch ຜິດພາດ: ${e.message}`, 'blog-err');
+        }
+
+        const pct = Math.round(((i + chunk.length) / toUpdate.length) * 100);
+        document.getElementById('ba-progress-fill').style.width = pct + '%';
+        document.getElementById('ba-progress-text').textContent =
+            `${Math.min(i + CHUNK, toUpdate.length)} / ${toUpdate.length} (${pct}%)`;
+
+        await new Promise(r => setTimeout(r, 40));
+    }
+
+    addLog(`\n🎉 ສຳເລັດ: ${done} updated, ${errors} errors`, 'blog-done');
+
+    // Refresh UI
+    baIsRunning = false;
+    baSelectedVillageIds.clear();
+    refreshBulkAssignStats();
+    renderBulkVillageList();
+    filterBulkVillages();
+    document.getElementById('ba-run-btn').disabled = false;
+    document.getElementById('ba-preview-panel').style.display = 'none';
+});
+
+// ── Hook into existing showPage & showAdminSections ────────────
+// Patch showPage to init bulk assign when navigating there
+const _origShowPage = showPage;
+window.showPage = function(page) {
+    _origShowPage(page);
+    if (page === 'bulk-assign-management') initBulkAssign();
+};
+
+// Patch showAdminSections to also show the bulk-assign nav link
+const _origShowAdmin = showAdminSections;
+window.showAdminSections = function() {
+    _origShowAdmin();
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+};
+
+const _origHideAdmin = hideAdminSections;
+window.hideAdminSections = function() {
+    _origHideAdmin();
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+};
